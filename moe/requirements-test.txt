@@ -1,0 +1,7 @@
+# Component tests and synthetic smoke only; no CLIP weights or GPU required.
+torch>=2.7
+torchvision>=0.22
+numpy
+scipy
+scikit-learn
+Pillow

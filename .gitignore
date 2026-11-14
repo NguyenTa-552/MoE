@@ -1,0 +1,47 @@
+# Local tooling and credentials
+/.agents/
+/.aws/
+/.codex/
+.directory
+.env
+.env.*
+!.env.example
+
+# Reference checkouts; provenance and snapshots are preserved in docs/
+/DAPO/
+/Anomaly_detection_CLIP/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Local research assets and generated outputs
+/data/
+/datasets/
+/checkpoints/
+/runs/
+/outputs/
+/logs/
+/wandb/
+*.pth
+*.pt
+*.ckpt
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+*~
+
+# Machine-specific experiment paths
+/moe/configs/local.json

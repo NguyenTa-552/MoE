@@ -1,0 +1,4 @@
+# Use the already reproduced DAPO environment for real image experiments.
+# Keep the upstream pins as the reference; do not upgrade that environment blindly.
+-r ../DAPO/requirements.txt
+scipy
