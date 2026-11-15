@@ -15,7 +15,8 @@ from .blocks.router import GainRouter
 from .config import load_config
 from .dapo import FrozenDAPO
 from .evaluation import evaluate, compare_to_baseline, export_per_class
-from .io import git_commit, read_json, sha256, write_json, dataset_inventory
+from .io import (git_commit, read_json, sha256, write_json, dataset_inventory,
+                 implementation_inventory, verify_source_image_disjointness)
 from .model import VARIANTS, TASK_VARIANTS, SEMANTIC_VARIANTS, expert_logits
 from .objectives import DAPOObjective
 from .splits import validate_splits, records_from_metadata
@@ -58,6 +59,7 @@ def make_router(baseline, config, variant):
 
 
 def provenance(config, config_path, seed):
+    split_summary = read_json(Path(config['splits']) / 'summary.json')
     packages = {}
     for package in ('torch', 'torchvision', 'numpy', 'scipy', 'scikit-learn', 'timm'):
         try:
@@ -67,7 +69,11 @@ def provenance(config, config_path, seed):
     return dict(seed=seed, git_commit=git_commit(),
                 git_commit_reason=None if git_commit() else 'Repository has no accessible HEAD commit',
                 baseline_sha256=sha256(config['baseline_checkpoint']), config_sha256=sha256(config_path),
+                backbone_pretrained_sha256=sha256(config['model']['pretrained']) if Path(config['model']['pretrained']).is_file() else None,
                 split_manifest_sha256=sha256(Path(config['splits']) / 'summary.json'),
+                split_grouping=split_summary.get('grouping', 'instance'),
+                image_independence_assumed=split_summary.get('image_independence_assumed', False),
+                split_grouping_note=split_summary.get('grouping_note'),
                 supervision_mode=config['supervision_mode'], vocabulary=config['defect_names'],
                 python=sys.version, platform=platform.platform(), dependencies=packages,
                 invocation=sys.argv, regression_tolerance=config['regression_tolerance'],
@@ -121,13 +127,33 @@ def save_result(directory, variant, base, selection, evaluation, status='complet
 
 
 def run_source(config_path, output, seed=0, device='cuda', variants=None):
+    """Own a fresh output directory and retain even configuration failures."""
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    try:
+        return _run_source(config_path, output, seed, device, variants)
+    except Exception as error:
+        status_path = output / 'status.json'
+        if not status_path.is_file() or read_json(status_path).get('status') != 'failed':
+            reason = f'{type(error).__name__}: {error}'
+            record = dict(variant='preflight', seed=seed, split='source_val', status='failed',
+                          reason=reason, metrics=None, comparison=None)
+            write_json(output / 'study.json', dict(results={'preflight': record}, status='failed'))
+            write_json(status_path, dict(status='failed', stage='preflight', error=reason))
+        raise
+
+
+def _run_source(config_path, output, seed=0, device='cuda', variants=None):
     from .data import ManifestDataset
     config = load_config(config_path)
     manifests = validate_splits(config['splits'])
     output = Path(output)
-    output.mkdir(parents=True, exist_ok=False)
     base = provenance(config, config_path, seed)
     write_json(output / 'config.json', config, exclusive=True)
+    base['resolved_config_sha256'] = sha256(output / 'config.json')
+    implementation = implementation_inventory()
+    base['implementation_sha256'] = implementation['sha256']
+    write_json(output / 'implementation-inventory.json', implementation, exclusive=True)
     write_json(output / 'provenance.json', base, exclusive=True)
     requested = list(VARIANTS) if variants is None else variants
     if set(requested) - set(VARIANTS):
@@ -139,6 +165,10 @@ def run_source(config_path, output, seed=0, device='cuda', variants=None):
     stage = 'B0'
     try:
         set_seed(seed)
+        inventory = dataset_inventory([row for m in manifests.values() for row in m['rows']], config['source_root'])
+        write_json(output / 'source-data-inventory.json', inventory)
+        base['dataset_sha256'] = inventory['sha256']
+        verify_source_image_disjointness(manifests, inventory)
         if device.startswith('cuda'):
             torch.cuda.reset_peak_memory_stats(torch.device(device))
         baseline = FrozenDAPO(config, config['baseline_checkpoint'], config['defect_names'], device)
@@ -147,9 +177,6 @@ def run_source(config_path, output, seed=0, device='cuda', variants=None):
         datasets = {role: ManifestDataset(manifest['rows'], config['source_root'], baseline,
                                          config['label_ids'], config['supervision_mode'])
                     for role, manifest in manifests.items()}
-        inventory = dataset_inventory([row for m in manifests.values() for row in m['rows']], config['source_root'])
-        write_json(output / 'source-data-inventory.json', inventory)
-        base['dataset_sha256'] = inventory['sha256']
         write_json(output / 'provenance.json', base)
         validation = datasets['source_val']
         # Inspect and export exact runtime shapes before training.
@@ -258,6 +285,7 @@ def run_source(config_path, output, seed=0, device='cuda', variants=None):
                 train_loss = None if router is None else train_router_epoch(
                     baseline, active_bank, router, datasets['router_train'], config, variant,
                     optimizer, objective, device, generator, donors_train)
+                print(f'{variant} source epoch {epoch + 1}/{epochs}: training_loss={train_loss}; validating source operating points', flush=True)
                 deltas = [0.] if variant in TASK_VARIANTS or variant in ('B1', 'P1-no-fallback') else config['delta_grid']
                 for delta in deltas:
                     evaluation = evaluate(baseline, active_bank, router, validation, variant, device,
@@ -293,6 +321,7 @@ def run_source(config_path, output, seed=0, device='cuda', variants=None):
                 status='completed' if best else 'no_qualifying_model', epoch=best_epoch, delta=best_delta,
                 reason=None if best else 'No source-selected epoch/threshold satisfies the worst-class constraint',
                 bank_hash=active_hash, router_path=str(checkpoint_path) if best else None, resources=resources)
+        stage = 'matched_coverage'
         matched = {}
         if bests.get('P1') is not None:
             p1_record = results['P1']
@@ -322,6 +351,11 @@ def run_source(config_path, output, seed=0, device='cuda', variants=None):
                    runtime_seconds=time.monotonic() - start,
                    peak_device_memory_bytes=torch.cuda.max_memory_allocated(torch.device(device)) if device.startswith('cuda') else None,
                    target_evaluation='not run', decision='Continue source investigation' if gate else 'NO GO: insufficient expert complementarity'))
+        write_json(output / 'source-locks.json', dict(
+            files={name: sha256(output / name) for name in
+                   [f'{variant}.json' for variant in results] + ['source-data-inventory.json', 'implementation-inventory.json']},
+            config_sha256=sha256(output / 'config.json'),
+            split_manifest_sha256=base['split_manifest_sha256']))
         write_json(output / 'status.json', dict(status='completed', target_evaluation='not run'))
         return results
     except Exception as error:
@@ -339,17 +373,34 @@ def evaluate_target(study, variant, dataset_name, data_root, output, device='cud
     """Use source-locked weights/thresholds; never optimize on target metrics."""
     from .data import ManifestDataset
     from .protocol import DAPO_DEFECT_NAMES
+    if variant not in VARIANTS:
+        raise ValueError(f'Unknown target variant: {variant}')
     if variant in ('O1',):
         raise ValueError('The label-informed oracle is a source diagnostic, not a target deployment')
     if variant != 'B0' and baseline_result is None:
         raise ValueError('Evaluate B0 once, then supply its target result via --baseline-result for paired comparisons')
     study, output = Path(study), Path(output)
+    if read_json(study / 'status.json')['status'] != 'completed':
+        raise ValueError('Complete the source study before locked target evaluation')
+    anchors = read_json(study / 'source-locks.json')
+    if sha256(study / f'{variant}.json') != anchors['files'][f'{variant}.json']:
+        raise ValueError('Source selection lock differs from the completed study')
+    if sha256(study / 'config.json') != anchors['config_sha256']:
+        raise ValueError('Source configuration differs from the completed study')
+    for name in ('source-data-inventory.json', 'implementation-inventory.json'):
+        if sha256(study / name) != anchors['files'][name]:
+            raise ValueError(f'Source artifact differs from the completed study: {name}')
     config = read_json(study / 'config.json')
     lock = read_json(study / f'{variant}.json')
+    if sha256(Path(config['splits']) / 'summary.json') != lock['split_manifest_sha256']:
+        raise ValueError('Source split summary differs from source training')
     if lock['metrics'] is None:
         raise ValueError('No qualifying source-selected model exists for this variant')
     if sha256(config['baseline_checkpoint']) != lock['baseline_sha256']:
         raise ValueError('The frozen baseline checkpoint differs from source training')
+    if lock.get('backbone_pretrained_sha256') is not None:
+        if sha256(config['model']['pretrained']) != lock['backbone_pretrained_sha256']:
+            raise ValueError('Frozen backbone weights differ from source training')
     protocol = read_json(Path(__file__).parent / 'configs/dapo_multitype.json').get(dataset_name)
     if protocol is None:
         raise ValueError('Target evaluation requires an upstream-supported multi-type dataset')
@@ -363,7 +414,13 @@ def evaluate_target(study, variant, dataset_name, data_root, output, device='cud
         if manifest['role'] != 'target_test' or manifest['domain'] != 'target':
             raise ValueError('Target evaluation requires a target_test manifest')
         rows = manifest['rows']
+    if not rows or len({row['image_id'] for row in rows}) != len(rows):
+        raise ValueError('Target manifest must contain unique, nonempty image IDs')
     source_manifests = validate_splits(config['splits'])
+    split_summary = read_json(Path(config['splits']) / 'summary.json')
+    if manifest_path is not None and split_summary.get('target_test'):
+        if sha256(manifest_path) != split_summary['target_test']['sha256']:
+            raise ValueError('Held-out target manifest differs from the preregistered split')
     if Path(data_root).resolve() == Path(config['source_root']).resolve():
         source_ids = {r['image_id'] for m in source_manifests.values() for r in m['rows']}
         if source_ids & {r['image_id'] for r in rows}:
@@ -383,6 +440,25 @@ def evaluate_target(study, variant, dataset_name, data_root, output, device='cud
             if len(matches) != 1:
                 raise ValueError(f'Unmapped target type: {row["defect"]}')
             label_ids[row['defect']] = matches.pop()
+    inventory = dataset_inventory(rows, data_root)
+    source_inventory = read_json(study / 'source-data-inventory.json')
+    source_image_hashes = {source_inventory['files'][row['img_path']]
+                           for manifest in source_manifests.values() for row in manifest['rows']}
+    duplicated = [row['img_path'] for row in rows if inventory['files'][row['img_path']] in source_image_hashes]
+    if duplicated:
+        raise ValueError(f'Target image content overlaps source data: {duplicated[0]}')
+    if baseline_result is not None:
+        paired = read_json(baseline_result)
+        expected = dict(variant='B0', split='target_test', status='completed', seed=lock['seed'],
+                        baseline_sha256=lock['baseline_sha256'], dataset=dataset_name,
+                        dataset_sha256=inventory['sha256'],
+                        target_manifest_sha256=None if manifest_path is None else sha256(manifest_path))
+        expected.update(resolved_config_sha256=lock['resolved_config_sha256'],
+                        split_manifest_sha256=lock['split_manifest_sha256'],
+                        target_implementation_sha256=implementation_inventory()['sha256'])
+        for key, value in expected.items():
+            if paired.get(key) != value:
+                raise ValueError(f'Paired B0 target reference differs in {key}')
     output.mkdir(parents=True, exist_ok=False)
     write_json(output / 'status.json', dict(status='running', stage='locked_target_evaluation'))
     start = time.monotonic()
@@ -411,7 +487,6 @@ def evaluate_target(study, variant, dataset_name, data_root, output, device='cud
         evaluation = evaluate(baseline, bank, router, dataset, variant, device,
             [lock['metrics']['threshold']], lock['delta'] or 0., config.get('scratch_dir'),
             output / 'predictions', donors, protocol, binary_names)
-        inventory = dataset_inventory(rows, data_root)
         write_json(output / 'target-data-inventory.json', inventory)
         record = dict(lock, split='target_test', dataset=dataset_name, status='completed',
                       vocabulary=names, source_vocabulary=lock['vocabulary'],
@@ -424,6 +499,7 @@ def evaluate_target(study, variant, dataset_name, data_root, output, device='cud
                       source_lock_sha256=sha256(study / f'{variant}.json'),
                       runtime_seconds=time.monotonic() - start,
                       evaluation_runtime_seconds=evaluation['evaluation_runtime_seconds'],
+                      target_implementation_sha256=implementation_inventory()['sha256'],
                       target_supervision='binary mask with image-level type; combined-mask limitation',
                       selection='Locked source epoch, delta, and global defect-probability threshold; no target tuning')
         record['artifact_paths'] = dict(source_study=str(study), router=lock['artifact_paths']['router'],

@@ -3,6 +3,8 @@
 This implements the staged study in `docs/DAPO_MoE_Coding_Agent_Instructions.docx`.
 It reuses the reproduced checkpoint and reads upstream blocks from `DAPO/` without
 editing them. It has no runtime dependency on the removed `Anomaly_detection_CLIP` branch.
+For a fresh server checkout, follow [the setup guide](../docs/SERVER_FROM_SCRATCH.md).
+See [the bug audit](../docs/BUG_AUDIT.md) for fixes and validation limits.
 
 ## Blocks and scoring
 
@@ -57,25 +59,34 @@ results or full DAPO reproduction evidence**. Output directories must be new.
 
 ## Audit annotations and prepare source roles
 
-Actual checkpoint, dataset roots, acquisition groups, and compute budget are not
+For a complete MVTec example with generated manifests and a configuration template,
+see [examples/mvtec](examples/mvtec/README.md).
+
+Actual checkpoint, dataset roots, and compute budget are not
 bundled here. Do not redownload or retrain the reproduced baseline by default.
 
 ```bash
-python -m moe.cli inspect-data --metadata /datasets/mvtec/meta.json \
-  --output runs/source-inspection
-# Copy and fill groups.template.json with verified acquisition/instance IDs.
 python -m moe.cli split --metadata /datasets/mvtec/meta.json \
-  --groups /manifests/source-groups.json --output /manifests/moe-source --seed 0
+  --output /manifests/moe-source --seed 0
 cp moe/configs/experiment.example.json moe/configs/local.json
 ```
 
-The group map is `{ "relative/image.png": "verified-instance-or-acquisition-id" }`.
-Shared objects/views must share a group. Image paths alone do not establish
-independence. Splits default to 60/20/20 percent of shuffled groups; group sizes can
-make image proportions differ. Labels are counted, not silently stratified across
-related samples. Inspect `summary.json` for coverage and adjust the grouping/split
-protocol before training if validation lacks supported defects. Reuse the same
-immutable manifests for matched seeds.
+No manual label or group file is needed for the default workflow. Existing
+`cls_name`/`product_cls` and `specie_name`/`defect_cls` fields supply the product and
+defect labels. Images are shuffled within each product/species stratum and assigned
+approximately 60/20/20 percent to the three roles. Strata with at least three images
+reserve one for every role; two images go to experts/validation, and a singleton to
+expert training. `summary.json` records incomplete coverage. Images never appear in
+multiple roles. Reuse these immutable manifests for matched experiment seeds.
+
+The automatic mode **assumes distinct images are independent**; product/species
+labels do not establish physical-object identity. This assumption is recorded in
+split summaries and run provenance. If you know images share an instance or
+acquisition, pass `--groups /manifests/source-groups.json`. Its format is
+`{ "relative/image.png": "verified-instance-or-acquisition-id" }`; shared views
+must share a group. This optional mode keeps groups intact and shuffles groups
+60/20/20 rather than stratifying images. `inspect-data` can generate an optional
+unfilled group template. Check `summary.json` for label coverage in either mode.
 
 Set `baseline_checkpoint`, `source_root`, `splits`, and the exact reproduced model
 settings in your local config. Check the supplied source vocabulary and label IDs
@@ -101,14 +112,15 @@ Product-held-out and defect-held-out protocols are separate split options:
 
 ```bash
 python -m moe.cli split --metadata /datasets/mvtec/meta.json \
-  --groups /manifests/source-groups.json --output /manifests/product-study \
+  --output /manifests/product-study \
   --held-out-products cable
 python -m moe.cli split --metadata /datasets/mvtec/meta.json \
-  --groups /manifests/source-groups.json --output /manifests/defect-study \
+  --output /manifests/defect-study \
   --held-out-defects scratch --aliases /manifests/alias-to-canonical.json
 ```
 
-Entire groups containing excluded records go into `target_test.json`. For defect
+Excluded images go into `target_test.json`; with `--groups`, entire related groups
+go there together. For defect
 holdout, also remove held-out names and synonyms from the source config vocabulary
 and remap source label IDs; the config validator checks recorded forbidden names.
 Candidate text names can be introduced during target evaluation. CLIP pretraining
@@ -129,15 +141,24 @@ bash moe/scripts/run_experiments.sh moe/configs/local.json runs/moe-matched 0 1 
 
 Set `MOE_PYTHON=/path/to/environment/bin/python` and `MOE_DEVICE=cpu` if needed.
 The script runs numerical tests before experiments, records failed seeds, and
-aggregates all attempted seeds. For an allocated SLURM partition:
+aggregates all attempted seeds. On the server login node, use the cluster launcher:
 
 ```bash
-bash moe/scripts/submit_source.sh YOUR_PARTITION 04:00:00 32G \
-  moe/configs/local.json runs/moe-cluster 0
+export CLUSTER_CONDA_ENV=DAPOenv
+bash moe/scripts/run_cluster.sh --dry-run test
+bash moe/scripts/run_cluster.sh test
+bash moe/scripts/run_cluster.sh smoke
+bash moe/scripts/run_cluster.sh source moe/configs/local.json
 ```
 
-Activate the prepared environment first. Partition, time, and memory are explicit;
-adapt the launcher for cluster-specific QoS/modules rather than assuming access.
+The launcher loads Miniconda and CUDA and runs `source activate` inside each job.
+It defaults to `student9696`, one 96 GB MIG, QoS `qos96`, Conda environment
+`DAPOenv`, and CUDA module `cuda12.8`; environment variables override these settings. It preserves
+SLURM GPU visibility and uses job IDs in default output directories. See
+[the server guide](../docs/CLUSTER_EXPERIMENTS.md) for preparation, full resource
+overrides, real-data feasibility jobs, and locked target submissions. The explicit
+`submit_source.sh PARTITION TIME MEMORY CONFIG OUTPUT_ROOT [SEED ...]` entry point
+still works through the same environment initialization.
 
 | ID | Implementation |
 | --- | --- |
@@ -159,6 +180,7 @@ independent seeds and identical schedules. B1 is evaluated at its fixed final ep
 router epochs are selected on source validation. Task heads have one extra baseline
 output relative to gain heads; other MLP dimensions match.
 P1-no-context uses the same mechanism as B4; matching results are not independent evidence.
+The shell launchers accept `MOE_VARIANTS="B3 P1"` for a shorter feasibility job.
 
 Router expansion stops unless the source oracle CE improvement exceeds
 `min_oracle_gain`. P2 additionally requires P1 to beat qualifying B2/B3 source F1 and
@@ -196,7 +218,9 @@ python -m moe.cli evaluate-target --study runs/moe-matched/seed-0 \
 ```
 
 Use `--manifest /manifests/product-study/target_test.json` for same-dataset holdouts.
-The runner rejects source overlap and mismatched baseline/bank/router hashes. Every
+The runner rejects exact source-image content overlap and mismatched baseline/bank/router hashes.
+`source-locks.json` also anchors the resolved config, split summary, source data/code
+inventories, and selection records. Preserve these files after source selection. Every
 nonbaseline result requires the paired B0 target result from the same data and seed.
 It does not optimize epochs, thresholds, or delta on target labels. O1 is unavailable
 as a target deployment. Current target loading expects binary masks with image

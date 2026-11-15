@@ -1,8 +1,9 @@
 # MoE implementation and local validation
 
-The implementation is in `moe/` on branch `moe-experiments`. The repository has no
-initial commit yet; scientific run records report a missing commit as null rather
-than inventing provenance. `DAPO/` remains clean at upstream commit
+The implementation is in `moe/` on branch `moe-experiments`. Initial local validation
+preceded the first repository commit; scientific run records capture the accessible
+HEAD and report missing commits as null rather than inventing provenance.
+`DAPO/` remains clean at upstream commit
 `290411d7374cc2182ad3491b826131af1ff73224`.
 
 ## Implemented
@@ -11,7 +12,8 @@ than inventing provenance. `DAPO/` remains clean at upstream commit
   features, and the original normalization, temperature, interpolation, and CLS branch.
 - Residual expert bank, semantic/appearance routers, detached ordinary/robust gain
   targets, strict baseline fallback, local loss diagnostics, and explicit annotation modes.
-- Grouped immutable source-role manifests, separate product/defect holdout options,
+- Immutable source-role manifests with automatic product/species-stratified images
+  or optional verified instance groups, separate product/defect holdout options,
   class-balanced expert bootstraps, shared-bank controls B0–B5/P1/P2/O1, and P1 ablations.
 - Source-only checkpoint/threshold selection, complementarity and P2 gates,
   matched-source-coverage comparisons, separately invoked locked target evaluation,
@@ -21,8 +23,16 @@ than inventing provenance. `DAPO/` remains clean at upstream commit
   and seed aggregation with sample standard deviations and attempted statuses.
 
 See `moe/README.md` for exact commands and configuration requirements.
+Server submission follows `docs/CLUSTER_EXPERIMENTS.md`. The cluster launcher loads
+modules and activates the reproduced environment inside the SLURM allocation, requests
+the partition's exact MIG GRES, and preserves scheduler GPU visibility. Nine mocked
+launcher tests cover submission and environment initialization without server access.
 
 ## Verification
+
+The latest audit passed all 37 CPU tests. Findings and remaining server validation
+are recorded in [BUG_AUDIT.md](BUG_AUDIT.md); fresh-server commands are in
+[SERVER_FROM_SCRATCH.md](SERVER_FROM_SCRATCH.md).
 
 The CPU suite covers baseline/fallback equivalence, real upstream prompt/adapter
 interfaces and Focal/Dice losses with a tiny encoder, gradient isolation, checkpoint
@@ -34,7 +44,7 @@ selection, checkpoint reload, synthetic target evaluation, and report generation
 
 ```bash
 .venv/bin/python -m unittest discover -s moe/tests -v
-bash -n moe/scripts/run_experiments.sh moe/scripts/submit_source.sh
+bash -n moe/scripts/run_experiments.sh moe/scripts/submit_source.sh moe/scripts/run_cluster.sh
 python -m compileall -q moe
 ```
 
@@ -57,8 +67,13 @@ optimization. B1 uses a fixed final epoch. P1-no-context duplicates B4's mechani
 All experts are executed before hard selection. FLOPs, confidence intervals, and
 official MoECLIP reproduction remain uncomputed and are reported accordingly.
 
+Automatic metadata splitting assumes independent images, without inferring physical
+instance IDs from product/species labels. This departure from verified acquisition/
+instance grouping is recorded in summaries and run provenance. Known related views
+can still be kept together with an explicit group map.
+
 Before real execution, locate the existing reproduced baseline and dataset roots,
-audit mask semantics, provide verified instance/acquisition groups, inspect split
+audit mask semantics, create source manifests from existing labels, inspect split
 coverage, configure the existing server environment, and verify full checkpoint
 parity against the reproduction artifacts. Enable P2 only after source validation
 of its two brightness views and successful source control comparisons.

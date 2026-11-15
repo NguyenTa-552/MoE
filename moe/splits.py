@@ -1,4 +1,4 @@
-"""Immutable source splits, requiring real acquisition/instance group IDs."""
+"""Immutable source splits with metadata stratification or verified grouping."""
 
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -34,11 +34,64 @@ def records_from_metadata(path):
     return records
 
 
-def create_splits(metadata, groups_path, output, seed=0, ratios=(0.6, 0.2, 0.2),
-                  held_out_products=(), held_out_defects=(), aliases=None):
+def image_partitions(grouped, seed, ratios):
+    """Stratify independent images by existing product/species labels.
+
+    Three or more images reserve one for each role. Two images go to expert
+    training and validation; a singleton stays in expert training. Missing role
+    coverage is reported, never repaired by duplicating an image across roles.
+    """
+    buckets = defaultdict(list)
+    for key, rows in grouped.items():
+        row = rows[0]
+        buckets[(row['product'], row['defect'])].append(key)
+    rng = random.Random(seed)
+    partitions = [[], [], []]
+    for label in sorted(buckets):
+        keys = sorted(buckets[label])
+        rng.shuffle(keys)
+        count = len(keys)
+        if count == 1:
+            sizes = [1, 0, 0]
+        elif count == 2:
+            sizes = [1, 0, 1]
+        else:
+            ideal = [count * ratio for ratio in ratios]
+            sizes = [int(value) for value in ideal]
+            remainder_order = sorted(range(3), key=lambda i: (-(ideal[i] - sizes[i]), i))
+            for index in remainder_order[:count - sum(sizes)]:
+                sizes[index] += 1
+            for index in range(3):
+                if sizes[index] == 0:
+                    donor = max((i for i in range(3) if sizes[i] > 1),
+                                key=lambda i: (sizes[i] - ideal[i], sizes[i], -i))
+                    sizes[donor] -= 1
+                    sizes[index] += 1
+        offset = 0
+        for partition, size in zip(partitions, sizes):
+            partition.extend(keys[offset:offset + size])
+            offset += size
+    for partition in partitions:
+        rng.shuffle(partition)
+    return partitions
+
+
+def create_splits(metadata, groups_path=None, output=None, seed=0, ratios=(0.6, 0.2, 0.2),
+                  held_out_products=(), held_out_defects=(), aliases=None, grouping=None):
     if len(ratios) != 3 or any(x <= 0 for x in ratios) or abs(sum(ratios) - 1) > 1e-9:
         raise ValueError('Three positive split fractions must sum to one')
-    records, groups = records_from_metadata(metadata), read_json(groups_path)
+    if output is None:
+        raise ValueError('Specify an output directory')
+    grouping = grouping or ('instance' if groups_path is not None else 'image')
+    if grouping not in ('image', 'instance'):
+        raise ValueError('Grouping must be image or instance')
+    if grouping == 'instance' and groups_path is None:
+        raise ValueError('Instance grouping requires a verified --groups map')
+    if grouping == 'image' and groups_path is not None:
+        raise ValueError('Use instance grouping when providing a --groups map')
+    records = records_from_metadata(metadata)
+    groups = ({row['image_id']: 'image:' + row['image_id'] for row in records}
+              if grouping == 'image' else read_json(groups_path))
     if held_out_products and held_out_defects:
         raise ValueError('Product-held-out and defect-held-out are separate protocols')
     if held_out_defects and aliases is None:
@@ -60,17 +113,26 @@ def create_splits(metadata, groups_path, output, seed=0, ratios=(0.6, 0.2, 0.2),
     target_rows = [row for key in sorted(target_keys) for row in grouped.pop(key)]
     if len(grouped) < 3:
         raise ValueError('At least three independent groups are required')
-    keys = sorted(grouped)
-    random.Random(seed).shuffle(keys)
-    first = max(1, min(len(keys) - 2, round(len(keys) * ratios[0])))
-    second = max(first + 1, min(len(keys) - 1, round(len(keys) * sum(ratios[:2]))))
-    partitions = (keys[:first], keys[first:second], keys[second:])
+    if grouping == 'image':
+        partitions = image_partitions(grouped, seed, ratios)
+    else:
+        keys = sorted(grouped)
+        random.Random(seed).shuffle(keys)
+        first = max(1, min(len(keys) - 2, round(len(keys) * ratios[0])))
+        second = max(first + 1, min(len(keys) - 1, round(len(keys) * sum(ratios[:2]))))
+        partitions = (keys[:first], keys[first:second], keys[second:])
+    if any(not partition for partition in partitions):
+        raise ValueError('Insufficient source examples to populate all three roles; inspect rare product/species strata')
     output = Path(output)
     if output.exists():
         raise FileExistsError('Split output already exists; manifests are immutable')
     output.mkdir(parents=True)
     summary = dict(seed=seed, metadata_sha256=sha256(metadata),
-                   groups_sha256=sha256(groups_path), roles={},
+                   groups_sha256=sha256(groups_path) if groups_path is not None else None, roles={},
+                   grouping=grouping, stratified_by=['product', 'defect'] if grouping == 'image' else None,
+                   image_independence_assumed=grouping == 'image',
+                   grouping_note='Distinct images are assumed independent; physical-instance/acquisition overlap is not verified'
+                   if grouping == 'image' else 'External instance/acquisition groups are kept intact',
                    protocol='product_held_out' if held_out_products else ('defect_held_out' if held_out_defects else 'cross_dataset'),
                    held_out_products=list(held_out_products), held_out_defects=sorted(excluded),
                    forbidden_source_names=sorted(set(held_out_defects) | excluded | {key for key, value in aliases.items() if canonical(value) in excluded}))
@@ -86,6 +148,14 @@ def create_splits(metadata, groups_path, output, seed=0, ratios=(0.6, 0.2, 0.2),
         write_json(path, dict(role='target_test', domain='target', rows=target_rows,
                              protocol=summary['protocol']), exclusive=True)
         summary['target_test'] = dict(images=len(target_rows), groups=len(target_keys), sha256=sha256(path))
+    coverage = defaultdict(lambda: {role: 0 for role in ROLES})
+    for role, keys in zip(ROLES, partitions):
+        for key in keys:
+            for row in grouped[key]:
+                coverage[f'{row["product"]}/{row["defect"]}'][role] += 1
+    summary['stratum_coverage'] = dict(sorted(coverage.items()))
+    summary['incomplete_strata'] = {label: counts for label, counts in summary['stratum_coverage'].items()
+                                    if any(count == 0 for count in counts.values())}
     write_json(output / 'summary.json', summary, exclusive=True)
     validate_splits(output)
     return summary

@@ -13,6 +13,7 @@ def aggregate(studies, output):
     synthetic = False
     scope = None
     seen = set()
+    compatibility = None
     for directory in map(Path, studies):
         status = read_json(directory / 'status.json')
         if status['status'] != 'completed':
@@ -25,6 +26,16 @@ def aggregate(studies, output):
         else:
             records = {}
         for variant, record in records.items():
+            if record.get('metrics') is not None:
+                fields = ['baseline_sha256', 'config_sha256', 'resolved_config_sha256',
+                          'split_manifest_sha256', 'implementation_sha256', 'supervision_mode',
+                          'vocabulary', 'synthetic_smoke']
+                if record['split'] == 'target_test':
+                    fields += ['dataset_sha256', 'target_manifest_sha256', 'target_implementation_sha256']
+                signature = {key: record.get(key) for key in fields}
+                if compatibility is not None and signature != compatibility:
+                    raise ValueError('Cannot aggregate runs with different configs, splits, baseline, code, vocabulary, or data')
+                compatibility = signature
             run_scope = (record['split'], record.get('dataset'))
             if scope is not None and run_scope != scope:
                 raise ValueError('Aggregate one source/target dataset scope at a time')
@@ -61,7 +72,8 @@ def aggregate(studies, output):
              'Frozen DAPO with residual visual experts; separate source expert/router training. '
              'Read each run’s supervision_mode, inspection.json, config.json, and provenance.json.', '',
              '## 3. Splits and selection', '',
-             'Immutable grouped source manifests separate expert training, router training, and validation. '
+             'Immutable source manifests separate expert training, router training, and validation. '
+             'Run provenance identifies label-stratified independent-image assumptions or verified instance grouping. '
              'Epoch, gain threshold, and global defect-probability threshold are selected on source validation '
              'under the configured worst-class regression constraint. Target evaluation uses these locked values.', '',
              '## 4. Complete comparison', '',

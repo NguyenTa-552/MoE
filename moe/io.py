@@ -42,3 +42,23 @@ def dataset_inventory(rows, root):
     files = {name: sha256(root / name) for name in sorted(paths)}
     digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
     return dict(root=str(root.resolve()), sha256=digest, files=files)
+
+
+def implementation_inventory():
+    root = Path(__file__).resolve().parent
+    files = {p.relative_to(root).as_posix(): sha256(p) for p in sorted(root.rglob('*'))
+             if p.is_file() and (p.suffix in ('.py', '.sh') or p.name.startswith('requirements')
+                                 or p == root / 'configs/dapo_multitype.json')}
+    digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+    return dict(sha256=digest, files=files)
+
+
+def verify_source_image_disjointness(manifests, inventory):
+    seen = {}
+    for role, manifest in manifests.items():
+        for row in manifest['rows']:
+            digest = inventory['files'][row['img_path']]
+            if digest in seen and seen[digest][0] != role:
+                previous_role, previous_image = seen[digest]
+                raise ValueError(f'Identical image content crosses source roles: {previous_role}/{previous_image} and {role}/{row["img_path"]}; keep duplicates in one group')
+            seen[digest] = (role, row['img_path'])

@@ -91,7 +91,9 @@ def run_smoke(output):
         target_rows = []
         for i, label in enumerate(('good', 'scratches', 'major_rust')):
             original = root / f'g0-c{i}.png'
-            Image.open(original).save(target / f'{i}.png')
+            target_pixels = np.array(Image.open(original)).copy()
+            target_pixels[-1, -1] = 99 + i
+            Image.fromarray(target_pixels).save(target / f'{i}.png')
             Image.open(root / f'g0-c{i}-mask.png').save(target / f'{i}-mask.png')
             target_rows.append(dict(img_path=f'{i}.png', mask_path=f'{i}-mask.png',
                                     anomaly=int(i > 0), cls_name='metal_plate', specie_name=label))

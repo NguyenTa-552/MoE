@@ -25,7 +25,7 @@ def binary_metrics(truth, scores):
                 f1_max=float(f1.max()))
 
 
-def multitype_metrics(truth, scores, labels):
+def multitype_metrics(truth, scores, labels, ignore_index=-1):
     """One-vs-rest metrics, including normal, matching DAPO's typed evaluator.
 
     Scores are channel-last [images, height, width, classes]. AP averages every
@@ -38,14 +38,20 @@ def multitype_metrics(truth, scores, labels):
         raise ValueError('Typed scores must match masks and the supplied class names')
     if not np.issubdtype(truth.dtype, np.integer) or truth.size == 0:
         raise ValueError('Typed masks must contain integer class IDs and be nonempty')
-    if truth.min() < 0 or truth.max() >= len(labels):
+    valid = truth != ignore_index
+    if not valid.any():
+        per_defect = {label: dict(auroc=None, ap=None, f1=None, support=0) for label in labels}
+        return dict(auroc=None, ap=None, f1=None), per_defect
+    if truth[valid].min() < 0 or truth[valid].max() >= len(labels):
         raise ValueError('Typed mask IDs must index the supplied class names')
     truth, scores = truth.ravel(), scores.reshape(-1, len(labels))
-    predictions = scores.argmax(axis=1)
+    valid = valid.ravel()
+    predictions = scores.argmax(axis=1)[valid]
+    truth = truth[valid]
     per_defect, f1_values = {}, []
     for index, label in enumerate(labels):
         positive, predicted = truth == index, predictions == index
-        values = scores[:, index]
+        values = scores[:, index][valid]
         if not np.isfinite(values).all():
             raise ValueError('Typed scores must be finite')
         support, predicted_count = int(positive.sum()), int(predicted.sum())

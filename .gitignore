@@ -10,7 +10,7 @@
 # Reference checkouts; provenance and snapshots are preserved in docs/
 /DAPO/
 /Anomaly_detection_CLIP/
-
+/docs/*.pdf
 # Python environments and caches
 .venv/
 venv/

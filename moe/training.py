@@ -49,6 +49,8 @@ def train_experts(baseline, bank, dataset, config, seed, output, objective, devi
                 optimizer.step()
                 total += float(loss.detach())
             histories.append(dict(expert=expert_index + 1, epoch=epoch, loss=total / len(loader)))
+            write_json(output / 'expert_training.json', histories)
+            print(f'Expert {expert_index + 1}/{len(bank.experts)} epoch {epoch + 1}/{config["expert_epochs"]}: loss={total / len(loader):.6f}', flush=True)
     bank.requires_grad_(False).eval()
     write_json(output / 'expert_training.json', histories)
 

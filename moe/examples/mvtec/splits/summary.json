@@ -1,0 +1,680 @@
+{
+  "seed": 0,
+  "metadata_sha256": "db66cf552367cdb7a36f1c5673f61aa73521d05d449b047a63c12e140fd22790",
+  "groups_sha256": null,
+  "roles": {
+    "expert_train": {
+      "images": 1036,
+      "groups": 1036,
+      "sha256": "6ef4d1083f2cfb8098ba4e8ff4cf0933cddf2d25b5092d1bf5f78a2ec9fbd352",
+      "labels": {
+        "faulty_imprint": 24,
+        "liquid": 6,
+        "oil": 11,
+        "fold": 10,
+        "poke": 24,
+        "rough": 19,
+        "thread_side": 14,
+        "cut_outer_insulation": 6,
+        "scratch_head": 14,
+        "hole": 27,
+        "good": 281,
+        "glue_strip": 11,
+        "missing_wire": 6,
+        "squeezed_teeth": 10,
+        "scratch": 55,
+        "damaged_case": 6,
+        "combined": 34,
+        "metal_contamination": 17,
+        "bent": 22,
+        "color": 55,
+        "scratch_neck": 15,
+        "cut_lead": 6,
+        "split_teeth": 11,
+        "fabric_border": 10,
+        "thread": 18,
+        "squeeze": 12,
+        "broken_teeth": 11,
+        "cut": 31,
+        "glue": 18,
+        "crack": 51,
+        "flip": 14,
+        "gray_stroke": 10,
+        "contamination": 26,
+        "fabric_interior": 10,
+        "bent_wire": 8,
+        "broken": 7,
+        "manipulated_front": 14,
+        "defective": 18,
+        "thread_top": 14,
+        "poke_insulation": 6,
+        "print": 10,
+        "broken_small": 13,
+        "missing_cable": 7,
+        "cable_swap": 7,
+        "cut_inner_insulation": 8,
+        "broken_large": 12,
+        "misplaced": 6,
+        "bent_lead": 6,
+        "pill_type": 5
+      },
+      "products": {
+        "capsule": 80,
+        "wood": 48,
+        "tile": 71,
+        "leather": 73,
+        "zipper": 91,
+        "screw": 96,
+        "cable": 90,
+        "toothbrush": 25,
+        "pill": 100,
+        "transistor": 60,
+        "hazelnut": 66,
+        "grid": 48,
+        "metal_nut": 69,
+        "carpet": 69,
+        "bottle": 50
+      }
+    },
+    "router_train": {
+      "images": 364,
+      "groups": 364,
+      "sha256": "84cb6d8f785bab4aded7eaf609a3eeee734251973d004cd89b18b2cf117fd049",
+      "labels": {
+        "poke": 8,
+        "good": 97,
+        "bent_wire": 3,
+        "cut_inner_insulation": 3,
+        "hole": 10,
+        "squeeze": 4,
+        "glue": 6,
+        "bent_lead": 2,
+        "fabric_interior": 3,
+        "color": 20,
+        "defective": 6,
+        "rough": 7,
+        "misplaced": 2,
+        "cut_lead": 2,
+        "cut": 12,
+        "broken_teeth": 4,
+        "missing_cable": 3,
+        "poke_insulation": 2,
+        "metal_contamination": 6,
+        "manipulated_front": 5,
+        "scratch_neck": 5,
+        "scratch_head": 5,
+        "broken": 3,
+        "combined": 11,
+        "oil": 4,
+        "crack": 18,
+        "thread": 6,
+        "fabric_border": 4,
+        "cut_outer_insulation": 2,
+        "scratch": 19,
+        "contamination": 8,
+        "liquid": 2,
+        "bent": 8,
+        "fold": 4,
+        "squeezed_teeth": 3,
+        "faulty_imprint": 9,
+        "split_teeth": 4,
+        "flip": 5,
+        "missing_wire": 2,
+        "broken_small": 5,
+        "broken_large": 4,
+        "print": 4,
+        "gray_stroke": 3,
+        "thread_top": 5,
+        "thread_side": 5,
+        "glue_strip": 4,
+        "damaged_case": 2,
+        "cable_swap": 3,
+        "pill_type": 2
+      },
+      "products": {
+        "leather": 27,
+        "pill": 34,
+        "cable": 32,
+        "carpet": 26,
+        "capsule": 28,
+        "transistor": 20,
+        "zipper": 32,
+        "metal_nut": 25,
+        "toothbrush": 9,
+        "hazelnut": 24,
+        "screw": 33,
+        "grid": 16,
+        "wood": 16,
+        "tile": 25,
+        "bottle": 17
+      }
+    },
+    "source_val": {
+      "images": 325,
+      "groups": 325,
+      "sha256": "94176537acbe18f5b7a7e35e39abad858e2359bee277abccf39aff91142a4168",
+      "labels": {
+        "split_teeth": 3,
+        "combined": 10,
+        "manipulated_front": 5,
+        "thread_top": 4,
+        "good": 89,
+        "hole": 8,
+        "scratch_head": 5,
+        "print": 3,
+        "scratch": 17,
+        "cut": 10,
+        "broken_large": 4,
+        "glue_strip": 3,
+        "missing_cable": 2,
+        "contamination": 8,
+        "cut_outer_insulation": 2,
+        "color": 18,
+        "faulty_imprint": 8,
+        "broken_teeth": 4,
+        "fabric_border": 3,
+        "poke_insulation": 2,
+        "scratch_neck": 5,
+        "poke": 7,
+        "broken_small": 4,
+        "damaged_case": 2,
+        "thread_side": 4,
+        "glue": 6,
+        "oil": 3,
+        "rough": 6,
+        "bent": 7,
+        "metal_contamination": 5,
+        "defective": 6,
+        "crack": 15,
+        "cable_swap": 2,
+        "thread": 6,
+        "cut_lead": 2,
+        "broken": 2,
+        "pill_type": 2,
+        "squeezed_teeth": 3,
+        "flip": 4,
+        "liquid": 2,
+        "fold": 3,
+        "cut_inner_insulation": 3,
+        "bent_lead": 2,
+        "squeeze": 4,
+        "bent_wire": 2,
+        "fabric_interior": 3,
+        "misplaced": 2,
+        "gray_stroke": 3,
+        "missing_wire": 2
+      },
+      "products": {
+        "zipper": 28,
+        "screw": 31,
+        "wood": 15,
+        "grid": 14,
+        "transistor": 20,
+        "carpet": 22,
+        "hazelnut": 20,
+        "leather": 24,
+        "cable": 28,
+        "bottle": 16,
+        "tile": 21,
+        "pill": 33,
+        "capsule": 24,
+        "metal_nut": 21,
+        "toothbrush": 8
+      }
+    }
+  },
+  "grouping": "image",
+  "stratified_by": [
+    "product",
+    "defect"
+  ],
+  "image_independence_assumed": true,
+  "grouping_note": "Distinct images are assumed independent; physical-instance/acquisition overlap is not verified",
+  "protocol": "cross_dataset",
+  "held_out_products": [],
+  "held_out_defects": [],
+  "forbidden_source_names": [],
+  "stratum_coverage": {
+    "bottle/broken_large": {
+      "expert_train": 12,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "bottle/broken_small": {
+      "expert_train": 13,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "bottle/contamination": {
+      "expert_train": 13,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "bottle/good": {
+      "expert_train": 12,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "cable/bent_wire": {
+      "expert_train": 8,
+      "router_train": 3,
+      "source_val": 2
+    },
+    "cable/cable_swap": {
+      "expert_train": 7,
+      "router_train": 3,
+      "source_val": 2
+    },
+    "cable/combined": {
+      "expert_train": 7,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "cable/cut_inner_insulation": {
+      "expert_train": 8,
+      "router_train": 3,
+      "source_val": 3
+    },
+    "cable/cut_outer_insulation": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "cable/good": {
+      "expert_train": 35,
+      "router_train": 12,
+      "source_val": 11
+    },
+    "cable/missing_cable": {
+      "expert_train": 7,
+      "router_train": 3,
+      "source_val": 2
+    },
+    "cable/missing_wire": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "cable/poke_insulation": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "capsule/crack": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "capsule/faulty_imprint": {
+      "expert_train": 13,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "capsule/good": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "capsule/poke": {
+      "expert_train": 13,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "capsule/scratch": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "capsule/squeeze": {
+      "expert_train": 12,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "carpet/color": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "carpet/cut": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "carpet/good": {
+      "expert_train": 17,
+      "router_train": 6,
+      "source_val": 5
+    },
+    "carpet/hole": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "carpet/metal_contamination": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "carpet/thread": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "grid/bent": {
+      "expert_train": 7,
+      "router_train": 3,
+      "source_val": 2
+    },
+    "grid/broken": {
+      "expert_train": 7,
+      "router_train": 3,
+      "source_val": 2
+    },
+    "grid/glue": {
+      "expert_train": 7,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "grid/good": {
+      "expert_train": 13,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "grid/metal_contamination": {
+      "expert_train": 7,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "grid/thread": {
+      "expert_train": 7,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "hazelnut/crack": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "hazelnut/cut": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "hazelnut/good": {
+      "expert_train": 24,
+      "router_train": 8,
+      "source_val": 8
+    },
+    "hazelnut/hole": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "hazelnut/print": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "leather/color": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "leather/cut": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "leather/fold": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "leather/glue": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "leather/good": {
+      "expert_train": 19,
+      "router_train": 7,
+      "source_val": 6
+    },
+    "leather/poke": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "metal_nut/bent": {
+      "expert_train": 15,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "metal_nut/color": {
+      "expert_train": 13,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "metal_nut/flip": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "metal_nut/good": {
+      "expert_train": 13,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "metal_nut/scratch": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "pill/color": {
+      "expert_train": 15,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "pill/combined": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "pill/contamination": {
+      "expert_train": 13,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "pill/crack": {
+      "expert_train": 16,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "pill/faulty_imprint": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "pill/good": {
+      "expert_train": 16,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "pill/pill_type": {
+      "expert_train": 5,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "pill/scratch": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "screw/good": {
+      "expert_train": 25,
+      "router_train": 8,
+      "source_val": 8
+    },
+    "screw/manipulated_front": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "screw/scratch_head": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "screw/scratch_neck": {
+      "expert_train": 15,
+      "router_train": 5,
+      "source_val": 5
+    },
+    "screw/thread_side": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "screw/thread_top": {
+      "expert_train": 14,
+      "router_train": 5,
+      "source_val": 4
+    },
+    "tile/crack": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "tile/glue_strip": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "tile/good": {
+      "expert_train": 20,
+      "router_train": 7,
+      "source_val": 6
+    },
+    "tile/gray_stroke": {
+      "expert_train": 10,
+      "router_train": 3,
+      "source_val": 3
+    },
+    "tile/oil": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "tile/rough": {
+      "expert_train": 9,
+      "router_train": 3,
+      "source_val": 3
+    },
+    "toothbrush/defective": {
+      "expert_train": 18,
+      "router_train": 6,
+      "source_val": 6
+    },
+    "toothbrush/good": {
+      "expert_train": 7,
+      "router_train": 3,
+      "source_val": 2
+    },
+    "transistor/bent_lead": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "transistor/cut_lead": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "transistor/damaged_case": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "transistor/good": {
+      "expert_train": 36,
+      "router_train": 12,
+      "source_val": 12
+    },
+    "transistor/misplaced": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "wood/color": {
+      "expert_train": 5,
+      "router_train": 2,
+      "source_val": 1
+    },
+    "wood/combined": {
+      "expert_train": 7,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "wood/good": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "wood/hole": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "wood/liquid": {
+      "expert_train": 6,
+      "router_train": 2,
+      "source_val": 2
+    },
+    "wood/scratch": {
+      "expert_train": 13,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "zipper/broken_teeth": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 4
+    },
+    "zipper/combined": {
+      "expert_train": 10,
+      "router_train": 3,
+      "source_val": 3
+    },
+    "zipper/fabric_border": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "zipper/fabric_interior": {
+      "expert_train": 10,
+      "router_train": 3,
+      "source_val": 3
+    },
+    "zipper/good": {
+      "expert_train": 19,
+      "router_train": 7,
+      "source_val": 6
+    },
+    "zipper/rough": {
+      "expert_train": 10,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "zipper/split_teeth": {
+      "expert_train": 11,
+      "router_train": 4,
+      "source_val": 3
+    },
+    "zipper/squeezed_teeth": {
+      "expert_train": 10,
+      "router_train": 3,
+      "source_val": 3
+    }
+  },
+  "incomplete_strata": {}
+}

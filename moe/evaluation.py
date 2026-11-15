@@ -19,12 +19,18 @@ from .model import expert_logits, route
 from .training import donor_context
 
 
+def mean_or_none(values):
+    return float(values.mean()) if values.numel() else None
+
+
 def primary_metrics(products, threshold):
     per_class = {}
     for product, record in products.items():
         truth, scores = record['truth'], record['scores']
+        valid = truth != -1
         for index, name in enumerate(record['labels'][1:], 1):
-            actual, predicted = truth == index, scores[..., index] >= threshold
+            actual = truth == index
+            predicted = (scores[..., index] >= threshold) & valid
             support = int(actual.sum())
             if not support:
                 # Report absence, exclude from defect-only primary macro.
@@ -112,7 +118,6 @@ def evaluate(baseline, bank, router, dataset, variant, device, thresholds,
                 binary_logits = expert_logits(baseline, bank, features, binary_text)
                 binary_donor = None if donors is None else donor_context(
                     baseline, dataset, [index], donors, device, binary_ids, binary_names)
-                binary_occupancy = None
                 if variant == 'O1':
                     # Oracle local loss uses the available image type's binary
                     # candidate alias when present; refuse ambiguous mappings.
@@ -157,9 +162,9 @@ def evaluate(baseline, bank, router, dataset, variant, device, thresholds,
             image_predictions.append(dict(image_id=row['image_id'], product=product,
                                           prediction_file=f'{index:06d}.npz',
                                           defect=row['defect'], anomaly=row['anomaly'],
-                                          baseline_loss=float(losses[..., 0][valid].mean()),
-                                          selected_loss=float(routed_loss[valid].mean()),
-                                          fallback_coverage=None if variant == 'B2' else float((routing['selected'][valid] == 0).float().mean())))
+                                          baseline_loss=mean_or_none(losses[..., 0][valid]),
+                                          selected_loss=mean_or_none(routed_loss[valid]),
+                                          fallback_coverage=None if variant == 'B2' else mean_or_none((routing['selected'][valid] == 0).float())))
             if export is not None:
                 np.savez_compressed(export / f'{index:06d}.npz',
                     truth=record['truth'][offset], scores=scores, binary_map=anomaly_map,
@@ -172,14 +177,15 @@ def evaluate(baseline, bank, router, dataset, variant, device, thresholds,
         legacy = {}
         for product, record in products.items():
             valid = record['truth'] != -1
-            typed, per_defect = multitype_metrics(record['truth'][valid], record['scores'][valid], record['labels'])
+            # Preserve the score memmap instead of copying all C channels into RAM.
+            typed, per_defect = multitype_metrics(record['truth'], record['scores'], record['labels'])
             binary_truth = record['truth'] > 0
             binary = binary_metrics(binary_truth[valid], record['binary'][valid])
             binary['aupro'] = pixel_aupro(binary_truth, record['binary']) if valid.all() else None
             legacy[product] = dict(image=binary_metrics(record['image_truth'], record['image_scores']),
                                    binary_pixel=binary, multi_type=typed, per_defect=per_defect)
             actual = record['truth'][valid]
-            predicted = record['scores'][valid].argmax(-1)
+            predicted = record['scores'].argmax(-1)[valid]
             classes = len(record['labels'])
             confusion = np.bincount(actual * classes + predicted, minlength=classes * classes).reshape(classes, classes)
             legacy[product]['confusion_matrix'] = dict(labels=record['labels'], counts=confusion.tolist())
@@ -207,10 +213,10 @@ def evaluate(baseline, bank, router, dataset, variant, device, thresholds,
             balanced[key] = sum(values) / len(values) if values else None
         all_valid_losses = loss_tensor[validity]
         complementarity = dict(
-            baseline_local_ce=float(all_valid_losses[:, 0].mean()),
-            oracle_local_ce=float(all_valid_losses.min(-1).values.mean()),
-            individual_local_ce=all_valid_losses.mean(0).tolist(),
-            oracle_gain=float((all_valid_losses[:, 0] - all_valid_losses.min(-1).values).mean()))
+            baseline_local_ce=mean_or_none(all_valid_losses[:, 0]),
+            oracle_local_ce=mean_or_none(all_valid_losses.min(-1).values),
+            individual_local_ce=all_valid_losses.mean(0).tolist() if all_valid_losses.numel() else None,
+            oracle_gain=mean_or_none(all_valid_losses[:, 0] - all_valid_losses.min(-1).values))
         result = dict(primary=primary, legacy=legacy, routing=diagnostics,
                       routing_by_group=group_diagnostics, routing_by_class=class_diagnostics,
                       routing_class_balanced=balanced, complementarity=complementarity)
@@ -232,7 +238,8 @@ def evaluate(baseline, bank, router, dataset, variant, device, thresholds,
         if export is not None:
             write_json(export / 'index.json', image_predictions)
             # Deterministic examples: largest local-loss improvements/regressions.
-            ranked = sorted(image_predictions, key=lambda r: r['selected_loss'] - r['baseline_loss'])
+            ranked = sorted((r for r in image_predictions if r['selected_loss'] is not None),
+                            key=lambda r: r['selected_loss'] - r['baseline_loss'])
             write_json(export / 'failure_examples.json', dict(
                 sampling_rule='Three lowest and highest selected-minus-baseline mean local CE',
                 improvements=ranked[:3], regressions=list(reversed(ranked[-3:]))))

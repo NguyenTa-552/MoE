@@ -8,9 +8,11 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    split = commands.add_parser('split', help='Create immutable grouped source-role manifests')
+    split = commands.add_parser('split', help='Create source roles automatically from product/species labels or verified groups')
     split.add_argument('--metadata', required=True)
-    split.add_argument('--groups', required=True, help='JSON mapping img_path to verified instance/acquisition ID')
+    split.add_argument('--groups', help='Optional JSON mapping img_path to verified instance/acquisition ID')
+    split.add_argument('--grouping', choices=('image', 'instance'),
+                       help='Default: label-stratified independent images, or instance grouping when --groups is supplied')
     split.add_argument('--output', required=True)
     split.add_argument('--seed', type=int, default=0)
     split.add_argument('--held-out-products', nargs='+', default=[])
@@ -47,7 +49,8 @@ def main():
         result = create_splits(args.metadata, args.groups, args.output, args.seed,
                                held_out_products=args.held_out_products,
                                held_out_defects=args.held_out_defects,
-                               aliases=None if args.aliases is None else read_json(args.aliases))
+                               aliases=None if args.aliases is None else read_json(args.aliases),
+                               grouping=args.grouping)
     elif args.command == 'inspect-data':
         from collections import Counter
         from .splits import records_from_metadata
@@ -55,7 +58,7 @@ def main():
         rows = records_from_metadata(args.metadata)
         result = dict(records=len(rows), products=dict(Counter(r['product'] for r in rows)),
                       defects=dict(Counter(r['defect'] for r in rows)), metadata_sha256=sha256(args.metadata),
-                      instruction='Fill each null with a verified instance/acquisition group; image IDs alone do not establish independence')
+                      instruction='Run split directly for automatic product/species-stratified image splitting; optionally fill the group template to preserve known instance/acquisition relationships')
         output = Path(args.output)
         output.mkdir(parents=True, exist_ok=False)
         write_json(output / 'inspection.json', result, exclusive=True)

@@ -1,0 +1,11 @@
+{
+  "metadata_path": "DAPO/data/mvtec/meta.json",
+  "metadata_sha256": "db66cf552367cdb7a36f1c5673f61aa73521d05d449b047a63c12e140fd22790",
+  "upstream_commit": "290411d7374cc2182ad3491b826131af1ff73224",
+  "upstream_url": "https://github.com/boschresearch/defect-aware-prompt-optimization/blob/290411d7374cc2182ad3491b826131af1ff73224/data/mvtec/meta.json",
+  "partition": "test",
+  "seed": 0,
+  "images": 1725,
+  "actual_images_or_masks_loaded": false,
+  "scope": "Metadata-only split example, not experiment results"
+}
