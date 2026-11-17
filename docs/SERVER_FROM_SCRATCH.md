@@ -1,7 +1,7 @@
 # Run on the server from a fresh clone
 
 Use the existing reproduced DAPO checkpoint, prepared datasets, and `DAPOenv`.
-The defaults are `student9696`, QoS `qos96`, one 96 GB MIG, and `cuda12.8`.
+The defaults are `student9696`, QoS `qos9696`, one 96 GB MIG, and `cuda12.8`.
 No environment exports are required for those defaults.
 
 ## 1. Make this version available

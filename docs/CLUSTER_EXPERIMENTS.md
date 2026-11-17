@@ -40,7 +40,7 @@ instead of overwriting `CUDA_VISIBLE_DEVICES`.
 
 ## Choose permitted resources
 
-The configured default is `student9696`, QoS `qos96`, one 96 GB MIG, four CPUs,
+The configured default is `student9696`, QoS `qos9696`, one 96 GB MIG, four CPUs,
 16 GB host RAM, and one hour, using Conda environment `DAPOenv` as requested.
 Your account must have access to the selected partition and QoS.
 
@@ -51,13 +51,13 @@ Your account must have access to the selected partition and QoS.
 
 The guide lists a 24-hour limit for student partitions. For other partitions,
 including `researcher`, set `CLUSTER_GPU_GRES` explicitly. The launcher does not
-use `qos96` on other partitions. Override `CLUSTER_QOS` with a permitted value, or
+use `qos9696` on other partitions. Override `CLUSTER_QOS` with a permitted value, or
 set it to an empty string to omit the QoS option.
 Check actual permissions and availability with `sinfo` and `scontrol show partition`.
 
 ```bash
 export CLUSTER_PARTITION=student9696
-export CLUSTER_QOS=qos96
+export CLUSTER_QOS=qos9696
 export CLUSTER_TIME=01:00:00
 export CLUSTER_MEM=16G
 # Optional account-specific overrides:

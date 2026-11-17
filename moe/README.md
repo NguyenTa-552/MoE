@@ -152,7 +152,7 @@ bash moe/scripts/run_cluster.sh source moe/configs/local.json
 ```
 
 The launcher loads Miniconda and CUDA and runs `source activate` inside each job.
-It defaults to `student9696`, one 96 GB MIG, QoS `qos96`, Conda environment
+It defaults to `student9696`, one 96 GB MIG, QoS `qos9696`, Conda environment
 `DAPOenv`, and CUDA module `cuda12.8`; environment variables override these settings. It preserves
 SLURM GPU visibility and uses job IDs in default output directories. See
 [the server guide](../docs/CLUSTER_EXPERIMENTS.md) for preparation, full resource

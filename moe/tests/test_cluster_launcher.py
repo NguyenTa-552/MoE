@@ -35,7 +35,7 @@ class ClusterLauncherTests(unittest.TestCase):
         self.assertIn('--gres=gpu:nvidia_rtx_pro_6000_blackwell_server_edition_4g.96gb:1', args)
         self.assertIn(f'--chdir={ROOT}', args)
         self.assertEqual(args[-5:], ['--batch', 'source', 'config with spaces.json', 'runs/test run', '0'])
-        self.assertIn('--qos=qos96', args)
+        self.assertIn('--qos=qos9696', args)
 
     def test_48gb_override_and_explicit_empty_qos(self):
         result = self.preview('test', environment={'CLUSTER_PARTITION': 'student4848', 'CLUSTER_QOS': ''})

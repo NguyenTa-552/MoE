@@ -21,7 +21,7 @@ explicitly. All relative paths resolve from this checkout's root.
 Environment overrides (use a partition your account can access):
   CLUSTER_PARTITION    student9696 (default); student4848/student4896 supported
   CLUSTER_GPU_GRES     Exact GRES; default is one 96 GB MIG on student9696
-  CLUSTER_QOS          qos96 on student9696 by default; empty omits --qos
+  CLUSTER_QOS          qos9696 on student9696 by default; empty omits --qos
   CLUSTER_CONDA_ENV    Existing environment name/path (default: DAPOenv)
   CLUSTER_CUDA_MODULE  CUDA module (default: cuda12.8, as in the archived script)
   CLUSTER_CPUS         CPUs per task (default: 4)
@@ -69,7 +69,7 @@ if ! "$batch"; then
       default_gres=gpu:nvidia_rtx_pro_6000_blackwell_server_edition_2g.48gb:1 ;;
     student9696)
       default_gres=gpu:nvidia_rtx_pro_6000_blackwell_server_edition_4g.96gb:1
-      default_qos=qos96 ;;
+      default_qos=qos9696 ;;
     *)
       default_gres=
       if [[ -z ${CLUSTER_GPU_GRES:-} ]]; then
