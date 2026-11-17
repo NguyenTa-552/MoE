@@ -23,7 +23,7 @@ Environment overrides (use a partition your account can access):
   CLUSTER_GPU_GRES     Exact GRES; default is one 96 GB MIG on student9696
   CLUSTER_QOS          qos9696 on student9696 by default; empty omits --qos
   CLUSTER_CONDA_ENV    Existing environment name/path (default: DAPOenv)
-  CLUSTER_CUDA_MODULE  CUDA module (default: cuda12.8, as in the archived script)
+  CLUSTER_CUDA_MODULE  CUDA module (default: cuda/12.6, as in the archived script)
   CLUSTER_CPUS         CPUs per task (default: 4)
   CLUSTER_MEM          Host memory (default: 16G)
   CLUSTER_TIME         Wall time (default: 01:00:00)
@@ -111,7 +111,7 @@ type module >/dev/null 2>&1 || { echo 'Lmod module command is unavailable in thi
 # and Lmod can reference unset variables; keep errexit but relax nounset here.
 set +u
 module load miniconda3
-module load "${CLUSTER_CUDA_MODULE:-cuda12.8}"
+module load "${CLUSTER_CUDA_MODULE:-cuda/12.6}"
 source activate "${CLUSTER_CONDA_ENV:-DAPOenv}"
 set -u
 

@@ -43,4 +43,4 @@ dist/
 *~
 
 # Machine-specific experiment paths
-/moe/configs/local.json
+#/moe/configs/local.json
