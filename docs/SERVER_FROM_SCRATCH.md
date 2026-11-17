@@ -85,7 +85,8 @@ After confirming each anomalous image's positive binary-mask pixels all belong
 to its metadata species, set `single_type_mask_verified` to JSON `true`.
 An image class alone does not establish that mask property. Standard MVTec binary
 masks require this audit; genuinely multi-type masks use `typed_mask` instead.
-JSON paths do not expand `$HOME` or `~`. Relative paths resolve from the checkout.
+JSON path fields expand environment variables such as `$HOME` and `${HOME}`, and
+leading `~`. Relative paths resolve from the checkout. The referenced files must exist.
 
 Optionally create a writable scratch directory and set its absolute path as
 `scratch_dir`. Dense score exports need substantial disk space. Preserve the full

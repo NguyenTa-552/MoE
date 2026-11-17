@@ -78,6 +78,7 @@ class ClusterLauncherTests(unittest.TestCase):
             env = clean_environment()
             env.update(BASH_ENV=str(root / 'shell-init'), PATH=f'{root}:{env["PATH"]}',
                        SLURM_JOB_ID='123', MOE_CLUSTER_PROJECT_ROOT=str(ROOT),
+                       CLUSTER_CUDA_MODULE='cuda-test-module',
                        CUDA_VISIBLE_DEVICES='MIG-assigned-device',
                        MOE_PYTHON=str(fake_python), CAPTURE_MODULES=str(root / 'modules'),
                        CAPTURE_ACTIVATE=str(root / 'activated'), CAPTURE_PYTHON=str(root / 'arguments'),
@@ -85,7 +86,7 @@ class ClusterLauncherTests(unittest.TestCase):
             result = subprocess.run(['bash', str(LAUNCHER), '--batch', 'test'], env=env,
                                     text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((root / 'modules').read_text().splitlines(), ['load miniconda3', 'load cuda12.8'])
+            self.assertEqual((root / 'modules').read_text().splitlines(), ['load miniconda3', 'load cuda-test-module'])
             self.assertEqual((root / 'activated').read_text().strip(), 'DAPOenv')
             self.assertEqual(set((root / 'visible').read_text().splitlines()), {'MIG-assigned-device'})
             self.assertIn(b'moe/tests', (root / 'arguments').read_bytes().split(b'\0'))

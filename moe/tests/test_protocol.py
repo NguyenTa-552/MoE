@@ -12,6 +12,41 @@ from moe.training import bootstrap_indices, shuffled_donors
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_config_expands_environment_and_home_paths(self):
+        import json
+        import os
+        from unittest.mock import patch
+        from moe.config import load_config
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'DAPO/open_clip').mkdir(parents=True)
+            (root / 'DAPO/open_clip/__init__.py').touch()
+            (root / 'baseline.pth').touch()
+            (root / 'images').mkdir()
+            rows = [dict(img_path=f'{i}.png', anomaly=0, specie_name='good') for i in range(6)]
+            for row in rows:
+                (root / 'images' / row['img_path']).touch()
+            write_json(root / 'meta.json', {'bottle': rows})
+            create_splits(root / 'meta.json', output=root / 'splits')
+            template = Path(__file__).resolve().parents[1] / 'configs/experiment.example.json'
+            config = json.loads(template.read_text())
+            config.update(dapo_root='$HOME/DAPO', baseline_checkpoint='${MOE_TEST_ROOT}/baseline.pth',
+                          source_root='~/images', splits='$MOE_TEST_ROOT/splits',
+                          scratch_dir='~', single_type_mask_verified=True)
+            write_json(root / 'config.json', config)
+            with patch.dict(os.environ, HOME=tmp, MOE_TEST_ROOT=tmp):
+                resolved = load_config('$MOE_TEST_ROOT/config.json')
+                self.assertEqual(resolved['dapo_root'], str(root / 'DAPO'))
+                self.assertEqual(resolved['baseline_checkpoint'], str(root / 'baseline.pth'))
+                self.assertEqual(resolved['source_root'], str(root / 'images'))
+                self.assertEqual(resolved['splits'], str(root / 'splits'))
+                self.assertEqual(resolved['scratch_dir'], tmp)
+                self.assertEqual(resolved['model']['pretrained'], 'openai')
+                config['model']['pretrained'] = '$HOME/backbone.pt'
+                write_json(root / 'config.json', config)
+                self.assertEqual(load_config('~/config.json')['model']['pretrained'],
+                                 str(root / 'backbone.pt'))
+
     def test_group_splits_disjoint_and_hash_tampering_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

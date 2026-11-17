@@ -84,8 +84,8 @@ known repeated objects/acquisitions. Copy `moe/configs/experiment.example.json` 
 `moe/configs/local.json` and supply server paths and the exact reproduced settings.
 The archived script's dataset path was
 `$HOME/triet-work/datasets/cde-mtad/canonical/mvtec`; verify your current location
-instead of assuming that historical path is still correct. JSON paths do not expand
-`$HOME` or `~`; use absolute paths or paths relative to the checkout root.
+instead of assuming that historical path is still correct. Config paths expand
+`$HOME`, `${HOME}`, and leading `~`; relative paths resolve from the checkout root.
 
 Keep read-only datasets under `/home` if convenient. The guide says `/compute_home`
 is faster for writes but shared and limited to 2 TB. For dense evaluation, create a

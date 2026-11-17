@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import math
+import os
 from .io import read_json
 from .splits import validate_splits
 
@@ -26,7 +27,14 @@ def validate_source_assets(config):
 
 
 def load_config(path):
-    config = read_json(path)
+    config = read_json(os.path.expanduser(os.path.expandvars(str(path))))
+    # Resolve shell-style paths before validation and before saving the run config.
+    for field in ('dapo_root', 'baseline_checkpoint', 'source_root', 'splits', 'scratch_dir'):
+        if isinstance(config.get(field), str):
+            config[field] = os.path.expanduser(os.path.expandvars(config[field]))
+    pretrained = config.get('model', {}).get('pretrained')
+    if isinstance(pretrained, str):
+        config['model']['pretrained'] = os.path.expanduser(os.path.expandvars(pretrained))
     for field in ('dapo_root', 'baseline_checkpoint', 'source_root', 'splits'):
         if not config.get(field):
             raise ValueError(f'Set {field} in a copied experiment configuration')

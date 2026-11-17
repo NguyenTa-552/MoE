@@ -1,5 +1,5 @@
 {
-  "dapo_root": "$HOME/nguyen-dd-work/Anomaly_detection_CLIP/DAPO",
+  "dapo_root": "$HOME/nguyen-dd-work/Anomaly_detection_CLIP//DAPO",
   "baseline_checkpoint": "$HOME/nguyen-dd-work/Anomaly_detection_CLIP/runs/clip-ad-train-6392/epoch_1.pth",
   "source_root": "$HOME/triet-work/datasets/cde-mtad/views/mvtec-dapo",
   "splits": "runs/manifests/mvtec-source",
