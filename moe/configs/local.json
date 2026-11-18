@@ -2,7 +2,7 @@
   "dapo_root": "DAPO",
   "baseline_checkpoint": "$HOME/nguyen-dd-work/Anomaly_detection_CLIP/runs/clip-ad-train-6392/epoch_1.pth",
   "source_root": "$HOME/triet-work/datasets/cde-mtad/views/mvtec-dapo",
-  "splits": "runs/manifests/mvtec-source",
+  "splits": "~/nguyen-dd-work/MoE/runs/manifest/mvtec-source",
   "supervision_mode": "binary_mask_with_image_type",
   "model": {
     "name": "ViT-L-14-336-quickgelu",
