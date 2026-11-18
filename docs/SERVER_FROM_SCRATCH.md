@@ -20,16 +20,18 @@ Connect using your assigned VPN/SSH details, then:
 ```bash
 mkdir -p "$HOME/projects"
 cd "$HOME/projects"
-git clone --branch moe-experiments https://github.com/NguyenTa-552/MoE.git
+git clone --recurse-submodules --branch moe-experiments https://github.com/NguyenTa-552/MoE.git
 cd MoE
-git clone https://github.com/boschresearch/defect-aware-prompt-optimization.git DAPO
-git -C DAPO checkout 290411d7374cc2182ad3491b826131af1ff73224
+git config submodule.recurse true
 git rev-parse HEAD
 git status --short
 ```
 
-`DAPO/` is ignored and must be provided separately. Keep it unchanged. If a checkout
-already exists, inspect its status before updating rather than cloning over it.
+`DAPO/` is a submodule pinned to the verified upstream commit. Keep it unchanged.
+For an existing clone, inspect local changes, pull the parent repository, then run
+`git submodule update --init --recursive` once and `git config submodule.recurse true`.
+Subsequent pulls update initialized submodules to the commits recorded by this repo;
+they do not follow the latest upstream DAPO branch automatically.
 
 ## 3. Activate the reproduced environment
 

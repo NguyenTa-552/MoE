@@ -13,9 +13,10 @@ Connect through your assigned NetBird VPN and SSH account. Use the login node fo
 environment setup, data organization, and submission; run training, inference,
 numerical tests, and smoke workflows inside SLURM allocations (guide pages 2–5).
 
-Transfer this updated checkout, including `moe/scripts/run_cluster.sh`. `DAPO/` is
-ignored by this repository, so separately provide the upstream checkout at commit
-`290411d7374cc2182ad3491b826131af1ff73224`. Reuse the environment, backbone weights,
+Transfer this updated checkout, including `moe/scripts/run_cluster.sh`. Initialize
+the pinned `DAPO/` submodule using `git submodule update --init --recursive`.
+The verified upstream commit is `290411d7374cc2182ad3491b826131af1ff73224`.
+Reuse the environment, backbone weights,
 and baseline checkpoint from your successful reproduction.
 
 ```bash
