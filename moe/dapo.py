@@ -68,10 +68,23 @@ class FrozenDAPO(nn.Module):
             'text_prompt': ('prompt_learner', 'prompt_learner_state_dict'),
             'adapter': ('linear_adapter', 'trainable_adapter_state_dict'),
         }
+        if 'blocks' in saved:
+            # Archived clip_ad checkpoints wrap the same upstream learned blocks.
+            if saved.get('format_version') != 1 or not isinstance(saved['blocks'], dict):
+                raise ValueError('Unsupported clip_ad checkpoint format; expected format_version=1 and a blocks mapping')
+            blocks = saved['blocks']
+            expected = {'visual_prompt', 'text_prompt', 'spatial_adapter'}
+            if set(blocks) != expected:
+                raise ValueError('This baseline requires plain DAPO blocks only: visual_prompt, text_prompt, '
+                                 'spatial_adapter. Checkpoint blocks are '
+                                 f'{sorted(blocks)}; spectral fusion or other extra blocks cannot be discarded')
+            saved = dict(visual_prompt=blocks['visual_prompt'], prompt_learner=blocks['text_prompt'],
+                         linear_adapter=blocks['spatial_adapter'])
         for block, keys in aliases.items():
             weights = next((saved[key] for key in keys if saved.get(key)), None)
             if weights is None:
-                raise ValueError(f'Missing original DAPO checkpoint block: {block}')
+                raise ValueError(f'Missing original DAPO checkpoint block: {block}; '
+                                 f'accepted keys: {aliases[block]}; available keys: {sorted(saved)}')
             getattr(self, block).load_state_dict(weights)
         self.to(device).requires_grad_(False).eval()
         self.names = list(names)

@@ -103,6 +103,29 @@ class DAPOBoundaryTests(unittest.TestCase):
             alias = FrozenDAPO(config, path, ['scratch', 'rust'])
             for before, after in zip(baseline.adapter.parameters(), alias.adapter.parameters()):
                 torch.testing.assert_close(before, after)
+            # The archived clip_ad runner wraps plain DAPO blocks in a mapping.
+            nested = dict(format_version=1, epoch=7, blocks=dict(
+                visual_prompt=visual.state_dict(), text_prompt=prompt.state_dict(),
+                spatial_adapter=adapter.state_dict()))
+            torch.save(nested, path)
+            restored = FrozenDAPO(config, path, ['scratch', 'rust'])
+            self.assertEqual(restored.checkpoint_epoch, 7)
+            for name in ('visual_prompt', 'text_prompt', 'adapter'):
+                expected_state = getattr(baseline, name).state_dict()
+                restored_state = getattr(restored, name).state_dict()
+                self.assertEqual(set(expected_state), set(restored_state))
+                for key in expected_state:
+                    torch.testing.assert_close(restored_state[key], expected_state[key])
+            # Dropping learned fusion would change the reproduced baseline.
+            nested['blocks']['fusion'] = {'gates': torch.ones(2)}
+            torch.save(nested, path)
+            with self.assertRaisesRegex(ValueError, 'cannot be discarded'):
+                FrozenDAPO(config, path, ['scratch', 'rust'])
+            del nested['blocks']['fusion']
+            nested['format_version'] = 99
+            torch.save(nested, path)
+            with self.assertRaisesRegex(ValueError, 'Unsupported clip_ad checkpoint format'):
+                FrozenDAPO(config, path, ['scratch', 'rust'])
 
     def test_expert_objective_uses_actual_upstream_focal_and_dice(self):
         from moe.blocks.scoring import dense_maps

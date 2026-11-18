@@ -41,6 +41,10 @@ Use the **existing successful DAPO environment** for real experiments. Upstream
 commit inspected: `290411d7374cc2182ad3491b826131af1ff73224`. Keep its vendored
 OpenCLIP import path; another installed `open_clip` must not be imported first.
 Set `model.pretrained` to a cached/local backbone checkpoint on offline nodes.
+The learned checkpoint may use original DAPO top-level keys or the archived
+`clip_ad` version-1 `blocks` format containing `visual_prompt`, `text_prompt`, and
+`spatial_adapter`. Checkpoints with spectral fusion are rejected: this wrapper
+cannot reproduce that additional learned component by dropping it.
 `moe/requirements.txt` references upstream requirements; it is not a new validated lock.
 
 For an isolated CPU component-test environment:
